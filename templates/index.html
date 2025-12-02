@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Language Translator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1 class="title">Text to Speech / Audio Translator</h1>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="text">Text</button>
+        <button class="tab-btn" data-tab="audio">Audio</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- TEXT SECTION -->
+      <section id="text" class="tab active">
+        <div class="card">
+          <h2>Text → Text & Speech</h2>
+
+          <label class="label">Enter Text</label>
+          <textarea id="input_text" rows="5"></textarea>
+
+          <div class="row">
+            <div class="select-wrap">
+              <img src="{{ url_for('static', filename='icons/select.png') }}" class="icon-small" />
+              <select id="text_lang">
+                <option value="">Select</option>
+                <option>English</option>
+                <option>Hindi</option>
+                <option>Marathi</option>
+              </select>
+            </div>
+
+            <div class="btn-row">
+              <button id="translate_text_btn" class="btn icon-btn"><img src="{{ url_for('static', filename='icons/translate.png') }}" /> Translate</button>
+              <button id="play_text_btn" class="btn icon-btn"><img src="{{ url_for('static', filename='icons/playtranslated.png') }}" /> Play Audio</button>
+              <button id="clear_text_btn" class="btn icon-btn"><img src="{{ url_for('static', filename='icons/clear.png') }}" /> Clear</button>
+            </div>
+          </div>
+
+          <label class="label">Translated Text</label>
+          <textarea id="translated_text" rows="5" readonly></textarea>
+
+          <div id="text_status" class="status">Status: Idle</div>
+          <audio id="text_audio" controls style="display:none;width:100%"></audio>
+        </div>
+      </section>
+
+      <!-- AUDIO SECTION -->
+      <section id="audio" class="tab">
+        <div class="card">
+          <h2>Audio → Audio & Text</h2>
+
+          <div class="audio-controls">
+            <button id="record_btn" class="btn icon-btn"><img src="{{ url_for('static', filename='icons/mic.png') }}" /> Record Audio</button>
+            <button id="stop_btn" class="btn icon-btn"><img src="{{ url_for('static', filename='icons/stop.png') }}" /> Stop Recording</button>
+            <button id="play_local_btn" class="btn icon-btn"><img src="{{ url_for('static', filename='icons/play.png') }}" /> Play Recorded</button>
+          </div>
+
+          <div class="row">
+            <div class="select-wrap">
+              <img src="{{ url_for('static', filename='icons/select.png') }}" class="icon-small" />
+              <select id="audio_lang">
+                <option value="">Select</option>
+                <option>English</option>
+                <option>Hindi</option>
+                <option>Marathi</option>
+              </select>
+            </div>
+
+            <div class="btn-row">
+              <button id="translate_audio_btn" class="btn icon-btn"><img src="{{ url_for('static', filename='icons/translate.png') }}" /> Translate Audio</button>
+              <button id="clear_audio_btn" class="btn icon-btn"><img src="{{ url_for('static', filename='icons/clear.png') }}" /> Clear</button>
+            </div>
+          </div>
+
+          <label class="label">Transcribed / Translated Text</label>
+          <textarea id="audio_translated" rows="5" readonly></textarea>
+
+          <div id="audio_status" class="status">Status: Idle</div>
+          <audio id="audio_out" controls style="display:none;width:100%"></audio>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

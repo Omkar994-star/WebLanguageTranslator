@@ -1,0 +1,7 @@
+Flask==2.3.2
+pydub==0.25.1
+assemblyai==0.48.0
+langdetect==1.0.9
+translate==3.6.1
+gTTS==2.3.2
+python-dotenv==1.0.0
