@@ -4,17 +4,7 @@ import shutil
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify, send_from_directory, url_for
 from dotenv import load_dotenv
-
-
-
 from pydub import AudioSegment
-import imageio_ffmpeg as ffmpeg
-
-AudioSegment.converter = ffmpeg.get_ffmpeg_exe()
-
-
-
-
 from gtts import gTTS
 from langdetect import detect
 from translate import Translator
