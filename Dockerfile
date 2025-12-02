@@ -2,17 +2,19 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Install ffmpeg for PyDub
-RUN apt-get update && apt-get install -y ffmpeg
+# Install ffmpeg and dependencies for PyDub
+RUN apt-get update && apt-get install -y ffmpeg libavcodec-extra && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python packages
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Upgrade pip
+RUN pip install --upgrade pip
 
-# Copy the rest of your app code
+# Copy the entire app code
 COPY . .
 
-# Expose the port Render expects
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Expose port Render expects
 EXPOSE 10000
 
 # Start the Flask app with gunicorn
