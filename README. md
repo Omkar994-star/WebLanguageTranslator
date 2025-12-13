@@ -1,0 +1,26 @@
+# Web Language Translator
+
+A web-based language translation application that supports
+text-to-text/speech and audio-to-audio/text translation between multiple languages.
+
+## Features
+- Text translation between English, Hindi, Marathi
+- Audio input and output translation
+- Real-time speech processing
+- User-friendly web interface
+
+## Tech Stack
+- Python
+- Flask
+- gtts
+- AssemblyAI API
+- HTML, CSS, JavaScript
+
+## Live Demo
+https://weblanguagetranslator-1.onrender.com
+
+## How to Run
+1. Clone the repo
+2. Install dependencies
+3. Set environment variables
+4. Run app.py
