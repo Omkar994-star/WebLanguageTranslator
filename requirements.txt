@@ -3,7 +3,7 @@ pydub==0.25.1
 assemblyai==0.48.0
 langdetect==1.0.9
 translate==3.6.1
-gTTS==2.3.2
+google-genai
 python-dotenv==1.0.0
 gunicorn==21.2.0
 imageio-ffmpeg==0.4.8
