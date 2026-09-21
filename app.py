@@ -104,10 +104,7 @@ def save_audio_blob(file_storage):
 
     except Exception:
 
-        shutil.copy(
-            orig_path,
-            wav_path
-        )
+        shutil.copy(orig_path, wav_path)
 
     return str(wav_path), str(orig_path)
 
@@ -163,19 +160,20 @@ def translate_text_core(text, target_lang_code):
     prompt = f"""
 Translate the following text into {target_language}.
 
-Important instructions:
-- Translate only the text.
+Instructions:
+- Translate only the provided text.
 - Do not explain the translation.
-- Do not add extra information.
+- Do not add any extra information.
 - Preserve the original meaning.
-- Keep names, numbers, and important technical terms accurate.
+- Preserve names, numbers, and technical terms.
+- Return only the translated text.
 
 Text:
 {text}
 """
 
     response = gemini_client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-3.6-flash",
         contents=prompt
     )
 
@@ -356,7 +354,7 @@ def api_play_text_audio():
     try:
 
         detection_response = gemini_client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.6-flash",
             contents=f"""
 Identify the language of the following text.
 
@@ -377,6 +375,7 @@ Text:
         )
 
         if lang not in ["en", "hi", "mr"]:
+
             lang = "en"
 
     except Exception:
