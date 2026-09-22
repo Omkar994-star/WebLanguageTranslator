@@ -533,123 +533,119 @@ document.addEventListener("DOMContentLoaded", () => {
     // =====================================================
 
     translateAudioBtn.addEventListener(
-        "click",
-        async () => {
+    "click",
+    async () => {
 
-            if (!recordedBlob) {
-
-                showMessage(
-                    "Please record audio first.",
-                    "error"
-                );
-
-                return;
-            }
-
-
-            const language =
-                audioLanguage.value;
-
-
-            const formData =
-                new FormData();
-
-
-            formData.append(
-                "audio",
-                recordedBlob,
-                "recording.webm"
-            );
-
-
-            formData.append(
-                "language",
-                language
-            );
-
-
-            translateAudioBtn.disabled =
-                true;
-
-
+        if (!recordedBlob) {
             showMessage(
-                "Transcribing and translating audio...",
-                "loading"
+                "Please record audio first.",
+                "error"
+            );
+            return;
+        }
+
+        const language = audioLanguage.value;
+
+        const formData = new FormData();
+
+        formData.append(
+            "audio",
+            recordedBlob,
+            "recording.webm"
+        );
+
+        formData.append(
+            "language",
+            language
+        );
+
+        translateAudioBtn.disabled = true;
+
+        showMessage(
+            "Transcribing and translating audio...",
+            "loading"
+        );
+
+        try {
+
+            const response = await fetch(
+                "/api/translate_audio",
+                {
+                    method: "POST",
+                    body: formData
+                }
             );
 
+            const responseText = await response.text();
+
+            let data;
 
             try {
+                data = JSON.parse(responseText);
+            }
+            catch (jsonError) {
 
-                const response =
-                    await fetch(
-                        "/api/translate_audio",
-                        {
-                            method: "POST",
-                            body: formData
-                        }
-                    );
-
-
-                const data =
-                    await response.json();
-
-
-                if (!response.ok || !data.success) {
-
-                    throw new Error(
-                        data.error ||
-                        "Audio translation failed."
-                    );
-
-                }
-
-
-                audioOriginalText.textContent =
-                    data.transcribed_text;
-
-
-                audioTranslatedText.textContent =
-                    data.translated_text;
-
-
-                translatedAudio.src =
-                    data.audio_url;
-
-
-                translatedAudio.classList.remove(
-                    "hidden"
+                console.error(
+                    "Server returned non-JSON response:",
+                    responseText
                 );
 
-
-                showMessage(
-                    "Audio translation completed.",
-                    "success"
+                throw new Error(
+                    `Server error (${response.status}). Check Render logs.`
                 );
-
-
-                translatedAudio.play()
-                    .catch(() => {});
-
             }
-            catch (error) {
 
-                console.error(error);
+            if (!response.ok || !data.success) {
 
-                showMessage(
-                    error.message,
-                    "error"
+                throw new Error(
+                    data.error ||
+                    "Audio translation failed."
                 );
-
             }
-            finally {
 
-                translateAudioBtn.disabled =
-                    false;
+            audioOriginalText.textContent =
+                data.transcribed_text;
 
-            }
+            audioTranslatedText.textContent =
+                data.translated_text;
+
+            translatedAudio.src =
+                data.audio_url;
+
+            translatedAudio.classList.remove(
+                "hidden"
+            );
+
+            showMessage(
+                "Audio translation completed.",
+                "success"
+            );
+
+            translatedAudio.play()
+                .catch(() => {});
 
         }
-    );
+        catch (error) {
+
+            console.error(
+                "Audio translation error:",
+                error
+            );
+
+            showMessage(
+                error.message,
+                "error"
+            );
+
+        }
+        finally {
+
+            translateAudioBtn.disabled = false;
+
+        }
+
+    }
+);
 
 
     // =====================================================
