@@ -1,136 +1,717 @@
-// Tab switching
-document.querySelectorAll('.tab-btn').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    const tab = btn.getAttribute('data-tab');
-    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-    document.getElementById(tab).classList.add('active');
-  });
-});
+document.addEventListener("DOMContentLoaded", () => {
 
-// TEXT SECTION
-const inputText = document.getElementById('input_text');
-const translatedText = document.getElementById('translated_text');
-const textStatus = document.getElementById('text_status');
-const textAudio = document.getElementById('text_audio');
+    // =====================================================
+    // TABS
+    // =====================================================
 
-document.getElementById('translate_text_btn').addEventListener('click', async ()=>{
-  const text = inputText.value.trim();
-  const lang = document.getElementById('text_lang').value;
-  textStatus.innerText = "Status: Translating...";
-  const res = await fetch('/api/translate_text', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({text, language: lang})
-  });
-  const j = await res.json();
-  if(j.translated_text){
-    translatedText.value = j.translated_text;
-    textStatus.innerText = "Status: Translation Complete";
-  } else {
-    textStatus.innerText = "Error: " + (j.error || 'Unknown');
-  }
-});
+    const textTab = document.getElementById("textTab");
+    const audioTab = document.getElementById("audioTab");
 
-document.getElementById('play_text_btn').addEventListener('click', async ()=>{
-  const text = translatedText.value.trim();
-  if(!text){ textStatus.innerText = "No translated text to play"; return; }
-  textStatus.innerText = "Status: Generating audio...";
-  const res = await fetch('/api/play_text_audio', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({text})
-  });
-  const j = await res.json();
-  if(j.audio_url){
-    textAudio.src = j.audio_url;
-    textAudio.style.display = 'block';
-    textAudio.play().catch(()=>{}); // autoplay may be blocked
-    textStatus.innerText = "Status: Playing Audio";
-  } else {
-    textStatus.innerText = "Error: " + (j.error || 'Unknown');
-  }
-});
+    const textSection = document.getElementById("textSection");
+    const audioSection = document.getElementById("audioSection");
 
-document.getElementById('clear_text_btn').addEventListener('click', ()=>{
-  inputText.value = '';
-  translatedText.value = '';
-  textStatus.innerText = 'Status: Cleared';
-  textAudio.style.display = 'none';
-});
 
-// AUDIO SECTION
-let mediaRecorder = null;
-let audioChunks = [];
-let recordedBlob = null;
+    textTab.addEventListener("click", () => {
 
-const audioStatus = document.getElementById('audio_status');
-const audioOut = document.getElementById('audio_out');
-const audioTranslated = document.getElementById('audio_translated');
+        textTab.classList.add("active");
+        audioTab.classList.remove("active");
 
-document.getElementById('record_btn').addEventListener('click', async ()=>{
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
-    audioChunks = [];
-    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-    mediaRecorder.onstop = () => {
-      recordedBlob = new Blob(audioChunks, { type: 'audio/webm' });
-      audioStatus.innerText = "Status: Recording stopped (ready)";
-    };
-    mediaRecorder.start();
-    audioStatus.innerText = "Status: Recording...";
-  } catch (err) {
-    audioStatus.innerText = "Error: Microphone access denied";
-  }
-});
+        textSection.classList.remove("hidden");
+        audioSection.classList.add("hidden");
 
-document.getElementById('stop_btn').addEventListener('click', ()=>{
-  if(mediaRecorder && mediaRecorder.state !== 'inactive') {
-    mediaRecorder.stop();
-    mediaRecorder.stream.getTracks().forEach(t=>t.stop());
-  }
-});
+    });
 
-document.getElementById('play_local_btn').addEventListener('click', ()=>{
-  if(!recordedBlob){ audioStatus.innerText = "No recorded audio"; return; }
-  const url = URL.createObjectURL(recordedBlob);
-  audioOut.src = url;
-  audioOut.style.display = 'block';
-  audioOut.play().catch(()=>{});
-});
 
-document.getElementById('translate_audio_btn').addEventListener('click', async ()=>{
-  if(!recordedBlob){ audioStatus.innerText = "Record audio first"; return; }
-  const language = document.getElementById('audio_lang').value;
-  if(!language){ audioStatus.innerText = "Select target language"; return; }
-  audioStatus.innerText = "Status: Uploading & Translating...";
-  const fd = new FormData();
-  // convert blob to file
-  const file = new File([recordedBlob], "audio.webm", { type: recordedBlob.type });
-  fd.append('audio', file);
-  fd.append('language', language);
+    audioTab.addEventListener("click", () => {
 
-  try {
-    const res = await fetch('/api/translate_audio', { method:'POST', body: fd });
-    const j = await res.json();
-    if(j.error){ audioStatus.innerText = "Error: " + j.error; return; }
-    audioTranslated.value = `Original: ${j.transcribed_text}\nTranslated: ${j.translated_text}`;
-    if(j.audio_url){
-      audioOut.src = j.audio_url;
-      audioOut.style.display = 'block';
-      audioOut.play().catch(()=>{});
+        audioTab.classList.add("active");
+        textTab.classList.remove("active");
+
+        audioSection.classList.remove("hidden");
+        textSection.classList.add("hidden");
+
+    });
+
+
+    // =====================================================
+    // COMMON MESSAGE
+    // =====================================================
+
+    const message = document.getElementById("message");
+
+
+    function showMessage(text, type = "") {
+
+        message.textContent = text;
+
+        message.className = type;
+
     }
-    audioStatus.innerText = "Status: Translation Complete";
-  } catch (err) {
-    audioStatus.innerText = "Error: Upload failed";
-    console.error(err);
-  }
-});
 
-document.getElementById('clear_audio_btn').addEventListener('click', ()=>{
-  audioTranslated.value = '';
-  audioOut.style.display = 'none';
-  audioStatus.innerText = 'Status: Cleared';
+
+    // =====================================================
+    // TEXT ELEMENTS
+    // =====================================================
+
+    const textInput =
+        document.getElementById("textInput");
+
+    const textLanguage =
+        document.getElementById("textLanguage");
+
+    const translatedText =
+        document.getElementById("translatedText");
+
+    const translateTextBtn =
+        document.getElementById("translateTextBtn");
+
+    const playTextBtn =
+        document.getElementById("playTextBtn");
+
+    const clearTextBtn =
+        document.getElementById("clearTextBtn");
+
+
+    // =====================================================
+    // TEXT TRANSLATION
+    // =====================================================
+
+    translateTextBtn.addEventListener(
+        "click",
+        async () => {
+
+            const text =
+                textInput.value.trim();
+
+            const language =
+                textLanguage.value;
+
+
+            if (!text) {
+
+                showMessage(
+                    "Please enter some text.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            translateTextBtn.disabled = true;
+
+            showMessage(
+                "Translating...",
+                "loading"
+            );
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/api/translate_text",
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+                                text: text,
+                                language: language
+                            })
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (!response.ok || !data.success) {
+
+                    throw new Error(
+                        data.error ||
+                        "Translation failed."
+                    );
+
+                }
+
+
+                translatedText.textContent =
+                    data.translated_text;
+
+
+                showMessage(
+                    "Translation completed.",
+                    "success"
+                );
+
+            }
+            catch (error) {
+
+                console.error(error);
+
+                showMessage(
+                    error.message,
+                    "error"
+                );
+
+            }
+            finally {
+
+                translateTextBtn.disabled = false;
+
+            }
+
+        }
+    );
+
+
+    // =====================================================
+    // TEXT TO SPEECH
+    // =====================================================
+
+    playTextBtn.addEventListener(
+        "click",
+        async () => {
+
+            const text =
+                translatedText.textContent.trim();
+
+
+            if (
+                !text ||
+                text === "Your translation will appear here."
+            ) {
+
+                showMessage(
+                    "Please translate some text first.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            playTextBtn.disabled = true;
+
+            showMessage(
+                "Generating audio...",
+                "loading"
+            );
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/api/play_text_audio",
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+                                text: text
+                            })
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (!response.ok || !data.success) {
+
+                    throw new Error(
+                        data.error ||
+                        "Could not generate audio."
+                    );
+
+                }
+
+
+                const audio =
+                    new Audio(data.audio_url);
+
+                await audio.play();
+
+
+                showMessage(
+                    "Playing audio.",
+                    "success"
+                );
+
+            }
+            catch (error) {
+
+                console.error(error);
+
+                showMessage(
+                    error.message,
+                    "error"
+                );
+
+            }
+            finally {
+
+                playTextBtn.disabled = false;
+
+            }
+
+        }
+    );
+
+
+    // =====================================================
+    // CLEAR TEXT
+    // =====================================================
+
+    clearTextBtn.addEventListener(
+        "click",
+        () => {
+
+            textInput.value = "";
+
+            translatedText.textContent =
+                "Your translation will appear here.";
+
+            showMessage("");
+
+        }
+    );
+
+
+    // =====================================================
+    // AUDIO ELEMENTS
+    // =====================================================
+
+    const recordBtn =
+        document.getElementById("recordBtn");
+
+    const stopBtn =
+        document.getElementById("stopBtn");
+
+    const playRecordedBtn =
+        document.getElementById("playRecordedBtn");
+
+    const translateAudioBtn =
+        document.getElementById("translateAudioBtn");
+
+    const clearAudioBtn =
+        document.getElementById("clearAudioBtn");
+
+    const audioLanguage =
+        document.getElementById("audioLanguage");
+
+    const recordingStatus =
+        document.getElementById("recordingStatus");
+
+    const recordedAudio =
+        document.getElementById("recordedAudio");
+
+    const translatedAudio =
+        document.getElementById("translatedAudio");
+
+    const audioOriginalText =
+        document.getElementById("audioOriginalText");
+
+    const audioTranslatedText =
+        document.getElementById("audioTranslatedText");
+
+
+    // =====================================================
+    // RECORDING VARIABLES
+    // =====================================================
+
+    let mediaRecorder = null;
+
+    let audioChunks = [];
+
+    let recordedBlob = null;
+
+    let recordedAudioURL = null;
+
+
+    // =====================================================
+    // RECORD AUDIO
+    // =====================================================
+
+    recordBtn.addEventListener(
+        "click",
+        async () => {
+
+            try {
+
+                const stream =
+                    await navigator.mediaDevices.getUserMedia({
+                        audio: true
+                    });
+
+
+                audioChunks = [];
+
+
+                mediaRecorder =
+                    new MediaRecorder(stream);
+
+
+                mediaRecorder.addEventListener(
+                    "dataavailable",
+                    (event) => {
+
+                        if (event.data.size > 0) {
+
+                            audioChunks.push(
+                                event.data
+                            );
+
+                        }
+
+                    }
+                );
+
+
+                mediaRecorder.addEventListener(
+                    "stop",
+                    () => {
+
+                        recordedBlob =
+                            new Blob(
+                                audioChunks,
+                                {
+                                    type: "audio/webm"
+                                }
+                            );
+
+
+                        if (recordedAudioURL) {
+
+                            URL.revokeObjectURL(
+                                recordedAudioURL
+                            );
+
+                        }
+
+
+                        recordedAudioURL =
+                            URL.createObjectURL(
+                                recordedBlob
+                            );
+
+
+                        recordedAudio.src =
+                            recordedAudioURL;
+
+
+                        recordedAudio.classList.remove(
+                            "hidden"
+                        );
+
+
+                        playRecordedBtn.disabled =
+                            false;
+
+
+                        translateAudioBtn.disabled =
+                            false;
+
+
+                        recordingStatus.textContent =
+                            "Recording completed.";
+
+
+                        stream
+                            .getTracks()
+                            .forEach(
+                                track =>
+                                    track.stop()
+                            );
+
+                    }
+                );
+
+
+                mediaRecorder.start();
+
+
+                recordBtn.disabled = true;
+
+                stopBtn.disabled = false;
+
+                playRecordedBtn.disabled = true;
+
+                translateAudioBtn.disabled = true;
+
+
+                recordingStatus.textContent =
+                    "Recording...";
+
+
+                showMessage(
+                    "Recording started.",
+                    "success"
+                );
+
+            }
+            catch (error) {
+
+                console.error(error);
+
+                showMessage(
+                    "Microphone access was denied or unavailable.",
+                    "error"
+                );
+
+            }
+
+        }
+    );
+
+
+    // =====================================================
+    // STOP RECORDING
+    // =====================================================
+
+    stopBtn.addEventListener(
+        "click",
+        () => {
+
+            if (
+                mediaRecorder &&
+                mediaRecorder.state !== "inactive"
+            ) {
+
+                mediaRecorder.stop();
+
+            }
+
+
+            recordBtn.disabled = false;
+
+            stopBtn.disabled = true;
+
+        }
+    );
+
+
+    // =====================================================
+    // PLAY RECORDED AUDIO
+    // =====================================================
+
+    playRecordedBtn.addEventListener(
+        "click",
+        () => {
+
+            if (!recordedAudioURL) {
+
+                showMessage(
+                    "No recording available.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            recordedAudio.play();
+
+        }
+    );
+
+
+    // =====================================================
+    // TRANSLATE AUDIO
+    // =====================================================
+
+    translateAudioBtn.addEventListener(
+        "click",
+        async () => {
+
+            if (!recordedBlob) {
+
+                showMessage(
+                    "Please record audio first.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            const language =
+                audioLanguage.value;
+
+
+            const formData =
+                new FormData();
+
+
+            formData.append(
+                "audio",
+                recordedBlob,
+                "recording.webm"
+            );
+
+
+            formData.append(
+                "language",
+                language
+            );
+
+
+            translateAudioBtn.disabled =
+                true;
+
+
+            showMessage(
+                "Transcribing and translating audio...",
+                "loading"
+            );
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/api/translate_audio",
+                        {
+                            method: "POST",
+                            body: formData
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (!response.ok || !data.success) {
+
+                    throw new Error(
+                        data.error ||
+                        "Audio translation failed."
+                    );
+
+                }
+
+
+                audioOriginalText.textContent =
+                    data.transcribed_text;
+
+
+                audioTranslatedText.textContent =
+                    data.translated_text;
+
+
+                translatedAudio.src =
+                    data.audio_url;
+
+
+                translatedAudio.classList.remove(
+                    "hidden"
+                );
+
+
+                showMessage(
+                    "Audio translation completed.",
+                    "success"
+                );
+
+
+                translatedAudio.play()
+                    .catch(() => {});
+
+            }
+            catch (error) {
+
+                console.error(error);
+
+                showMessage(
+                    error.message,
+                    "error"
+                );
+
+            }
+            finally {
+
+                translateAudioBtn.disabled =
+                    false;
+
+            }
+
+        }
+    );
+
+
+    // =====================================================
+    // CLEAR AUDIO
+    // =====================================================
+
+    clearAudioBtn.addEventListener(
+        "click",
+        () => {
+
+            recordedBlob = null;
+
+
+            if (recordedAudioURL) {
+
+                URL.revokeObjectURL(
+                    recordedAudioURL
+                );
+
+                recordedAudioURL = null;
+
+            }
+
+
+            recordedAudio.src = "";
+
+            translatedAudio.src = "";
+
+
+            recordedAudio.classList.add(
+                "hidden"
+            );
+
+
+            translatedAudio.classList.add(
+                "hidden"
+            );
+
+
+            playRecordedBtn.disabled =
+                true;
+
+
+            translateAudioBtn.disabled =
+                true;
+
+
+            audioOriginalText.textContent =
+                "Your transcribed text will appear here.";
+
+
+            audioTranslatedText.textContent =
+                "Your translated text will appear here.";
+
+
+            recordingStatus.textContent =
+                "Ready to record.";
+
+
+            showMessage("");
+
+        }
+    );
+
 });
