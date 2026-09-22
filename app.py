@@ -2,6 +2,8 @@ import os
 import uuid
 import shutil
 import wave
+import time
+import random
 from pathlib import Path
 
 from flask import Flask, render_template, request, jsonify, send_from_directory, url_for
@@ -163,7 +165,7 @@ Translate the following text into {target_language}.
 Instructions:
 - Translate only the provided text.
 - Do not explain the translation.
-- Do not add any extra information.
+- Do not add extra information.
 - Preserve the original meaning.
 - Preserve names, numbers, and technical terms.
 - Return only the translated text.
@@ -172,19 +174,53 @@ Text:
 {text}
 """
 
-    response = gemini_client.models.generate_content(
-        model="gemini-3.6-flash",
-        contents=prompt
+    max_attempts = 5
+
+    for attempt in range(max_attempts):
+
+        try:
+
+            response = gemini_client.models.generate_content(
+                model="gemini-3.6-flash",
+                contents=prompt
+            )
+
+            translated_text = response.text
+
+            if not translated_text:
+                raise RuntimeError(
+                    "Gemini returned an empty translation."
+                )
+
+            return translated_text.strip()
+
+        except Exception as e:
+
+            error_message = str(e)
+
+            # Retry only temporary server errors
+            if "503" not in error_message and "UNAVAILABLE" not in error_message:
+                raise
+
+            if attempt == max_attempts - 1:
+                raise RuntimeError(
+                    "Gemini translation service is temporarily unavailable. "
+                    "Please try again after a short while."
+                )
+
+            # 2s, 4s, 8s, 16s + small random jitter
+            wait_time = (2 ** attempt) + random.uniform(0, 1)
+
+            print(
+                f"Gemini 503 error. "
+                f"Retrying in {wait_time:.1f} seconds..."
+            )
+
+            time.sleep(wait_time)
+
+    raise RuntimeError(
+        "Translation failed."
     )
-
-    translated_text = response.text
-
-    if not translated_text:
-        raise RuntimeError(
-            "Gemini returned an empty translation."
-        )
-
-    return translated_text.strip()
 
 
 # --------------------------------------------------
